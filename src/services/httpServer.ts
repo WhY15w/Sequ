@@ -56,7 +56,7 @@ app.get("/api/getUserOnlineStatus", async (req, res) => {
     let isOnline = false;
     let server = "";
 
-    if (response2157 && response2157.length >= 20) {
+    if (response2157 && response2157.length >= 12) {
       const reader = new BufferReader(response2157);
       isOnline = reader.readUInt32() === 1;
       reader.skip(4);
