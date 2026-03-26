@@ -43,9 +43,6 @@ export class Login {
     }
   }
 
-  /**
-   * 网页端 HTTP 获取 Session Token
-   */
   async fetchSessionToken(account: string, password: string): Promise<Buffer> {
     const singleMd5Password = crypto
       .createHash("md5")

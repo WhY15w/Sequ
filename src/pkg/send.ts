@@ -166,6 +166,43 @@ export class SendPacketProcessing {
   }
 
   /**
+   * 发送数据包并等待对应的返回封包
+   * @param packedMessage 封包的 hex 字符串
+   * @param receiver 接收器实例
+   * @param expectedCmdId 期望收到的命令 ID (如果不传，默认尝试从发包数据中解析)
+   * @param timeout 超时时间 (默认 5000 毫秒)
+   */
+  async sendAndReceive(
+    packedMessage: string,
+    receiver: any,
+    expectedCmdId?: number,
+    timeout: number = 5000,
+    hexFormat: boolean = true
+  ): Promise<Buffer | null | string> {
+    const assembledPacket = this.groupPacket(packedMessage);
+    if (!assembledPacket) return null;
+
+    const waitCmdId = expectedCmdId ?? this.cmdId?.readUInt32BE(0);
+
+    if (waitCmdId === undefined) {
+      throw new Error("无法确定需要等待的 Command ID");
+    }
+
+    const receivePromise = receiver.waitForSpecificData(waitCmdId, timeout);
+
+    const success = await this.sendPacket(packedMessage);
+    if (!success) {
+      return null;
+    }
+
+    const responseData = await receivePromise;
+    if (hexFormat) {
+      return responseData.toString("hex");
+    }
+    return responseData;
+  }
+
+  /**
    * 写入Socket
    */
   private writeToSocket(data: Buffer): Promise<boolean> {
