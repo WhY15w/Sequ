@@ -109,6 +109,7 @@ app.get("/api/getUserInfo", async (req, res) => {
   try {
     const responseData: any = { account: String(account) };
 
+    // 详细信息
     const pkt2052 = new PacketBuilder().setCmdId(2052).addU32(account).build();
     const res2052 = await tcpService.sendAndReceive(2052, pkt2052);
 
@@ -124,13 +125,13 @@ app.get("/api/getUserInfo", async (req, res) => {
       });
     }
 
-    // 提取昵称并记录 hexDataMore
+    // 昵称
     const reader2052 = new BufferReader(res2052);
     reader2052.skip(4);
     responseData.nickName = reader2052.readString(16);
     responseData.hexDataMore = res2052.toString("hex").toUpperCase();
 
-    // 2. 发送 2157 获取在线状态与区服
+    // 在线状态
     const pkt2157 = new PacketBuilder()
       .setCmdId(2157)
       .addU32(1)
@@ -153,14 +154,14 @@ app.get("/api/getUserInfo", async (req, res) => {
       responseData.online = false;
     }
 
-    // 3. 发送 2051 获取简单信息
+    // 简单信息
     const pkt2051 = new PacketBuilder().setCmdId(2051).addU32(account).build();
     const res2051 = await tcpService.sendAndReceive(2051, pkt2051);
     responseData.hexDataSimple = res2051
       ? res2051.toString("hex").toUpperCase()
       : "";
 
-    // 4. 发送 41298 (1) 获取成就 精灵种类 皮肤 称号
+    // 成就 精灵种类 皮肤 称号
     const pkt41298_1 = new PacketBuilder()
       .setCmdId(41298)
       .addU32(1)
@@ -173,7 +174,7 @@ app.get("/api/getUserInfo", async (req, res) => {
       ? res41298_1.toString("hex").toUpperCase()
       : "";
 
-    // 5. 发送 41298 (5) 获取展示的精灵
+    // u端卡片展示的精灵
     const pkt41298_5 = new PacketBuilder()
       .setCmdId(41298)
       .addU32(5)
@@ -186,7 +187,7 @@ app.get("/api/getUserInfo", async (req, res) => {
       ? res41298_5.toString("hex").toUpperCase()
       : "";
 
-    // 6. 获取巅峰数据 40002
+    // 巅峰信息
     const peakParams = [
       124801,
       124802,
@@ -203,7 +204,7 @@ app.get("/api/getUserInfo", async (req, res) => {
     ];
 
     let hexDataPeak = "";
-    // 为了防止并发导致 TCP 串包，这里使用 for 循环顺序请求
+
     for (const param of peakParams) {
       const pkt40002 = new PacketBuilder()
         .setCmdId(40002)
@@ -236,6 +237,7 @@ app.get("/api/getUserInfo", async (req, res) => {
   }
 });
 
+// 获取战队信息
 app.get("/api/getTeamInfo", async (req, res) => {
   const cmdId = 2917;
   const teamId = Number(req.query.teamId);

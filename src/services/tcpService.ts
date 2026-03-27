@@ -5,11 +5,13 @@ import { Algorithms } from "../core/encrypt";
 import { Login } from "../core/login";
 import { settings } from "../config/config";
 import { getSeerServerInfo } from "../utils/fetchData";
+import { PacketBuilder } from "../utils/pkgBuilder";
 
 const RECONNECT_BASE_DELAY_MS = 2000;
 const RECONNECT_MAX_DELAY_MS = 30000;
 const SERVER_CHECK_INTERVAL_MS = 30000;
 const KEY_INIT_DELAY_MS = 5000;
+const HEARTBEAT_INTERVAL_MS = 5 * 60 * 1000;
 
 export class TCPService {
   private sender: SendPacketProcessing | null = null;
@@ -17,6 +19,7 @@ export class TCPService {
   private isReady: boolean = false;
   private isReconnecting: boolean = false;
   private reconnectAttempts: number = 0;
+  private heartbeatTimer: NodeJS.Timeout | null = null;
 
   /**
    * 初始化 TCP 连接并完成登录和密钥交换
@@ -61,6 +64,49 @@ export class TCPService {
     await new Promise((resolve) => setTimeout(resolve, KEY_INIT_DELAY_MS));
     this.isReady = true;
     console.log("TCP 服务端初始化完成，密钥就绪！");
+
+    // 心跳
+    this._startHeartbeat();
+  }
+
+  /**
+   * 开启心跳
+   */
+  private _startHeartbeat(): void {
+    this._stopHeartbeat();
+
+    this.heartbeatTimer = setInterval(async () => {
+      if (!this.isReady) return;
+
+      try {
+        const account = settings.service_account_id;
+        const pkt2157 = new PacketBuilder()
+          .setCmdId(2157)
+          .addU32(1)
+          .addU32(account)
+          .build();
+
+        await this.sendAndReceive(2157, pkt2157);
+        console.log(
+          `[${dayjs().format("YYYY-MM-DD HH:mm:ss")}] 【心跳】2157 保持连接成功`
+        );
+      } catch (error) {
+        console.error(
+          `[${dayjs().format("YYYY-MM-DD HH:mm:ss")}] 【心跳】发送心跳包失败:`,
+          (error as Error).message
+        );
+      }
+    }, HEARTBEAT_INTERVAL_MS);
+  }
+
+  /**
+   * 停止心跳
+   */
+  private _stopHeartbeat(): void {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
   }
 
   /**
@@ -70,6 +116,9 @@ export class TCPService {
     if (this.isReconnecting) return;
     this.isReconnecting = true;
     this.isReady = false;
+
+    // 停止心跳
+    this._stopHeartbeat();
 
     // 停止旧的接收器，立即释放资源并中止等待中的响应
     if (this.receiver) {
