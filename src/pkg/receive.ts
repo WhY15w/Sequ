@@ -1,8 +1,7 @@
-import fs from "fs";
 import { EventEmitter } from "events";
 import net from "net";
 import { Algorithms } from "../core/encrypt";
-import path from "path";
+import CommandData from "../config/Command.json";
 
 export class ReceivePacketAnalysis extends EventEmitter {
   private algorithms: Algorithms;
@@ -48,10 +47,7 @@ export class ReceivePacketAnalysis extends EventEmitter {
 
   private _loadCommandDict(): void {
     try {
-      const filePath = path.resolve(__dirname, "../config/Command.json");
-      const data = fs.readFileSync(filePath, "utf-8");
-
-      const parsed = JSON.parse(data);
+      const parsed: Record<string, any> = CommandData;
       for (const key in parsed) {
         this.commandDict[key] = Array.isArray(parsed[key])
           ? parsed[key][0]
