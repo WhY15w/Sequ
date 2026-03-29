@@ -25,7 +25,7 @@ app.get("/api/getUserOnlineStatus", async (req: Request, res: Response) => {
     const res2052 = await tcpService.sendAndReceive(2052, pkt2052);
 
     if (!res2052 || res2052.length <= 39) {
-      return res.status(404).json({
+      return res.json({
         success: false,
         message: "数据返回失败",
         data: { account: String(account), error: "该米米号的信息不存在" },
@@ -89,7 +89,7 @@ app.get("/api/getUserInfo", async (req: Request, res: Response) => {
     const res2052 = await tcpService.sendAndReceive(2052, pkt2052);
 
     if (!res2052 || res2052.length <= 39) {
-      return res.status(404).json({
+      return res.json({
         success: false,
         message: "数据返回失败",
         status: 1,
