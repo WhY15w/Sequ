@@ -1,4 +1,14 @@
 import dotenv from "dotenv";
+import fs from "fs";
+import os from "os";
+
+// Load .env.development on local Windows machines for easier development
+const isLocalWindows = os.platform() === "win32";
+
+if (isLocalWindows && fs.existsSync(".env.development")) {
+  console.log("Env: development");
+  dotenv.config({ path: ".env.development" });
+}
 
 dotenv.config();
 
@@ -19,7 +29,7 @@ function getEnvNumber(
   key: string,
   defaultValue: number,
   min?: number,
-  max?: number
+  max?: number,
 ): number {
   const value = process.env[key];
   if (!value) return defaultValue;
@@ -64,18 +74,18 @@ export const settings: Settings = {
   log_full_packet: getEnvBoolean("LOG_FULL_PACKET", false),
   ignored_cmd_ids: getEnvNumberArray(
     "IGNORED_CMD_IDS",
-    [8002, 3452, 2004, 2001, 41228, 1002, 2002]
+    [8002, 3452, 2004, 2001, 41228, 1002, 2002],
   ),
 };
 
 if (!settings.service_account_id) {
   console.warn(
-    "Warning: SERVICE_ACCOUNT_ID is not set in environment variables"
+    "Warning: SERVICE_ACCOUNT_ID is not set in environment variables",
   );
 }
 
 if (!settings.service_account_password) {
   console.warn(
-    "Warning: SERVICE_ACCOUNT_PASSWORD is not set in environment variables"
+    "Warning: SERVICE_ACCOUNT_PASSWORD is not set in environment variables",
   );
 }
