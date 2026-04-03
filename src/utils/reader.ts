@@ -63,7 +63,7 @@ class BufferReader {
   setOffset(offset: number): void {
     if (offset < 0 || offset > this.buffer.length) {
       throw new Error(
-        `Invalid offset: ${offset}, buffer length: ${this.buffer.length}`
+        `Invalid offset: ${offset}, buffer length: ${this.buffer.length}`,
       );
     }
     this._offset = offset;
@@ -77,7 +77,7 @@ class BufferReader {
     const remaining = this.getRemainingBytes();
     if (remaining < requiredBytes) {
       throw new Error(
-        `Buffer underflow in ${operation}: required ${requiredBytes} bytes, but only ${remaining} bytes remaining (offset: ${this._offset}, length: ${this.buffer.length})`
+        `Buffer underflow in ${operation}: required ${requiredBytes} bytes, but only ${remaining} bytes remaining (offset: ${this._offset}, length: ${this.buffer.length})`,
       );
     }
   }

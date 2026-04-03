@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { tcpService } from "../../tcpService";
 import { PacketBuilder } from "../../../utils/pkgBuilder";
 import { BufferReader } from "../../../utils/reader";
+import { badRequest, fail, notFound, success } from "../../../utils/reply";
 import {
   isValidAccount,
   getInvalidAccountRes,
@@ -55,38 +56,42 @@ export async function getUserOnlineStatus(
   const account = Number(req.query.account);
 
   if (!isValidAccount(account)) {
-    res.status(400).json(getInvalidAccountRes(account));
+    const invalidAccountRes = getInvalidAccountRes(account);
+    res.json(badRequest(invalidAccountRes.message, invalidAccountRes.data));
     return;
   }
 
   try {
     const nicknameResult = await fetchNickname(account);
     if (!nicknameResult.success) {
-      res.json({
-        success: false,
-        message: "数据返回失败",
-        data: { account: String(account), error: "该米米号的信息不存在" },
-      });
+      res.json(
+        notFound("数据返回失败", {
+          account: String(account),
+          error: "该米米号的信息不存在",
+        }),
+      );
       return;
     }
 
     const onlineResult = await fetchOnlineStatus(account);
 
-    res.json({
-      success: true,
-      message: "数据返回成功",
-      data: {
-        account: String(account),
-        nickName: nicknameResult.nickName,
-        ...onlineResult,
-      },
-    });
+    res.json(
+      success(
+        {
+          account: String(account),
+          nickName: nicknameResult.nickName,
+          ...onlineResult,
+        },
+        "数据返回成功",
+      ),
+    );
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "数据返回失败",
-      data: { account: String(account), error: (error as Error).message },
-    });
+    res.json(
+      fail("数据返回失败", {
+        account: String(account),
+        error: (error as Error).message,
+      }),
+    );
   }
 }
 
@@ -95,7 +100,12 @@ export async function getUserInfo(req: Request, res: Response): Promise<void> {
   const account = Number(req.query.account);
 
   if (!isValidAccount(account)) {
-    res.status(400).json(getInvalidAccountRes(account, true));
+    const invalidAccountRes = getInvalidAccountRes(account, true);
+    res.json(
+      badRequest(invalidAccountRes.message, invalidAccountRes.data, {
+        status: invalidAccountRes.status,
+      }),
+    );
     return;
   }
 
@@ -103,12 +113,13 @@ export async function getUserInfo(req: Request, res: Response): Promise<void> {
     // 验证账号是否存在
     const nicknameResult = await fetchNickname(account);
     if (!nicknameResult.success) {
-      res.json({
-        success: false,
-        message: "数据返回失败",
-        status: 1,
-        data: { account: String(account), error: "该米米号的信息不存在" },
-      });
+      res.json(
+        notFound(
+          "数据返回失败",
+          { account: String(account), error: "该米米号的信息不存在" },
+          { status: 1 },
+        ),
+      );
       return;
     }
 
@@ -171,28 +182,32 @@ export async function getUserInfo(req: Request, res: Response): Promise<void> {
       await new Promise((resolve) => setTimeout(resolve, 5));
     }
 
-    res.json({
-      success: true,
-      message: "数据返回成功",
-      status: 1,
-      data: {
-        account: String(account),
-        nickName: nicknameResult.nickName,
-        hexDataMore: nicknameResult.hexData,
-        ...onlineResult,
-        hexDataSimple,
-        hexDataPrat1,
-        hexDataPrat2,
-        hexDataPeak,
-      },
-    });
+    res.json(
+      success(
+        {
+          account: String(account),
+          nickName: nicknameResult.nickName,
+          hexDataMore: nicknameResult.hexData,
+          ...onlineResult,
+          hexDataSimple,
+          hexDataPrat1,
+          hexDataPrat2,
+          hexDataPeak,
+        },
+        "数据返回成功",
+        200,
+        { status: 1 },
+      ),
+    );
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "数据返回失败",
-      status: 1,
-      data: { account: String(account), error: (error as Error).message },
-    });
+    res.json(
+      fail(
+        "数据返回失败",
+        { account: String(account), error: (error as Error).message },
+        500,
+        { status: 1 },
+      ),
+    );
   }
 }
 
@@ -201,11 +216,7 @@ export async function getTeamInfo(req: Request, res: Response): Promise<void> {
   const teamId = Number(req.query.teamId);
 
   if (!teamId || isNaN(teamId) || teamId <= 0) {
-    res.status(400).json({
-      success: false,
-      message: "数据返回失败",
-      data: { error: "请输入有效的战队ID" },
-    });
+    res.json(badRequest("数据返回失败", { error: "请输入有效的战队ID" }));
     return;
   }
 
@@ -214,24 +225,17 @@ export async function getTeamInfo(req: Request, res: Response): Promise<void> {
     const result = await tcpService.sendAndReceive(2917, pkt);
 
     if (result && result.length > 0) {
-      res.json({
-        success: true,
-        message: "获取成功",
-        data: { teamId: String(teamId), hexDataTeam: toHexStr(result) },
-      });
+      res.json(
+        success(
+          { teamId: String(teamId), hexDataTeam: toHexStr(result) },
+          "获取成功",
+        ),
+      );
       return;
     }
 
-    res.json({
-      success: false,
-      message: "数据返回失败",
-      data: { error: "该战队号的信息不存在" },
-    });
+    res.json(notFound("数据返回失败", { error: "该战队号的信息不存在" }));
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "数据返回失败",
-      data: { error: (error as Error).message },
-    });
+    res.json(fail("数据返回失败", { error: (error as Error).message }));
   }
 }
