@@ -1,4 +1,4 @@
-import { HexFormatter } from "./format";
+import { HexFormatter } from "./format.js";
 
 /**
  * 数据包构建工具类
@@ -86,7 +86,7 @@ export class PacketBuilder {
     // 计算包体总长度
     const bodyLength = this.bodyParts.reduce(
       (sum, part) => sum + part.length,
-      0
+      0,
     );
 
     // 总长度 = 头部(17字节) + 包体长度
@@ -141,7 +141,7 @@ export class PacketBuilder {
   preview(): string {
     const bodyLength = this.bodyParts.reduce(
       (sum, part) => sum + part.length,
-      0
+      0,
     );
     const totalLength = 17 + bodyLength;
 

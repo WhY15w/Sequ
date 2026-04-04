@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "simple userinfo query to seer",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "build": "tsc",
     "start": "tsc && node dist/index.js",

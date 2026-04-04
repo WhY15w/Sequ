@@ -3,8 +3,8 @@ import {
   getUserOnlineStatus,
   getUserInfo,
   getTeamInfo,
-} from "../controllers/user.controller";
-import { getVoteInfo } from "../controllers/peak.controller";
+} from "../controllers/user.controller.js";
+import { getVoteInfo } from "../controllers/peak.controller.js";
 
 const router: express.Router = express.Router();
 

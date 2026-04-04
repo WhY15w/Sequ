@@ -28,19 +28,19 @@ export class Algorithms {
         j = 0;
         needBecomeZero = true;
       }
-      cipher[i] = plain[i] ^ this.key[j];
+      cipher[i] = plain[i]! ^ this.key[j]!;
       j++;
     }
     cipher[cipher.length - 1] = 0;
 
     // 循环左移5位，右移3位
     for (let i = cipher.length - 1; i > 0; i--) {
-      cipher[i] = ((cipher[i] << 5) & 0xff) | (cipher[i - 1] >> 3);
+      cipher[i] = ((cipher[i]! << 5) & 0xff) | (cipher[i - 1]! >> 3);
     }
-    cipher[0] = ((cipher[0] << 5) & 0xff) | 3;
+    cipher[0] = ((cipher[0]! << 5) & 0xff) | 3;
 
     const result =
-      (this.key[plain.length % this.key.length] * 13) % cipher.length;
+      (this.key[plain.length % this.key.length]! * 13) % cipher.length;
 
     const rotated = Buffer.concat([
       cipher.subarray(result),
@@ -58,7 +58,7 @@ export class Algorithms {
     cipher = cipher.subarray(4);
 
     const result =
-      (this.key[(cipher.length - 1) % this.key.length] * 13) % cipher.length;
+      (this.key[(cipher.length - 1) % this.key.length]! * 13) % cipher.length;
     const rotated = Buffer.concat([
       cipher.subarray(cipher.length - result),
       cipher.subarray(0, cipher.length - result),
@@ -67,7 +67,7 @@ export class Algorithms {
     const plain = Buffer.alloc(rotated.length - 1);
 
     for (let i = 0; i < rotated.length - 1; i++) {
-      plain[i] = ((rotated[i] >> 5) & 0xff) | ((rotated[i + 1] << 3) & 0xff);
+      plain[i] = ((rotated[i]! >> 5) & 0xff) | ((rotated[i + 1]! << 3) & 0xff);
     }
 
     let j = 0;
@@ -82,7 +82,7 @@ export class Algorithms {
         j = 0;
         needBecomeZero = true;
       }
-      plain[i] ^= this.key[j];
+      plain[i]! ^= this.key[j]!;
       j++;
     }
 

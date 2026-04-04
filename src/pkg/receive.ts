@@ -1,7 +1,7 @@
 import { EventEmitter } from "events";
 import net from "net";
-import { Algorithms } from "../core/encrypt";
-import { getCommandName } from "../utils/commandDict";
+import { Algorithms } from "../core/encrypt.js";
+import { getCommandName } from "../utils/commandDict.js";
 
 export class ReceivePacketAnalysis extends EventEmitter {
   private algorithms: Algorithms;
@@ -127,7 +127,9 @@ export class ReceivePacketAnalysis extends EventEmitter {
           const resolve = queue[0];
           queue.shift();
           if (queue.length === 0) this.waiters.delete(commandValue);
-          resolve(packetData);
+          if (resolve) {
+            resolve(packetData);
+          }
         }
 
         // 1001 命令处理 (密钥初始化)

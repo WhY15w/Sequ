@@ -1,6 +1,6 @@
-import { tcpService } from "./services/tcpService";
-import { app } from "./services/httpServer/app";
-import { settings } from "./config/config";
+import { tcpService } from "./services/tcpService.js";
+import { app } from "./services/httpServer/app.js";
+import { settings } from "./config/config.js";
 import type { Server } from "http";
 
 let httpServer: Server | null = null;
@@ -50,6 +50,4 @@ process.on("unhandledRejection", (reason) => {
 process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 
-if (require.main === module) {
-  bootstrap();
-}
+bootstrap();

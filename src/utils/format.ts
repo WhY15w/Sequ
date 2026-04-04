@@ -44,7 +44,7 @@ export class HexFormatter {
   static formatBuffer(
     buffer: Buffer,
     groupSize: number = 4,
-    separator: string = " "
+    separator: string = " ",
   ): string {
     const hex = buffer.toString("hex").toUpperCase();
     const groups: string[] = [];

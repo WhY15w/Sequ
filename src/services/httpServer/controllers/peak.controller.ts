@@ -1,8 +1,8 @@
-import { Request, Response } from "express";
-import { tcpService } from "../../tcpService";
-import { PacketBuilder } from "../../../utils/pkgBuilder";
-import { BufferReader } from "../../../utils/reader";
-import { badRequest, fail, notFound, success } from "../../../utils/reply";
+import type { Request, Response } from "express";
+import { tcpService } from "../../tcpService.js";
+import { PacketBuilder } from "../../../utils/pkgBuilder.js";
+import { BufferReader } from "../../../utils/reader.js";
+import { badRequest, fail, notFound, success } from "../../../utils/reply.js";
 
 type VoteItem = {
   voteMonsterId: number;

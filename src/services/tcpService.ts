@@ -1,11 +1,11 @@
 import dayjs from "dayjs";
-import { SendPacketProcessing } from "../pkg/send";
-import { ReceivePacketAnalysis } from "../pkg/receive";
-import { Algorithms } from "../core/encrypt";
-import { Login } from "../core/login";
-import { settings } from "../config/config";
-import { getUnityNoticeInfo, parseUnityNotice } from "../utils/fetchData";
-import { PacketBuilder } from "../utils/pkgBuilder";
+import { SendPacketProcessing } from "../pkg/send.js";
+import { ReceivePacketAnalysis } from "../pkg/receive.js";
+import { Algorithms } from "../core/encrypt.js";
+import { Login } from "../core/login.js";
+import { settings } from "../config/config.js";
+import { getUnityNoticeInfo, parseUnityNotice } from "../utils/fetchData.js";
+import { PacketBuilder } from "../utils/pkgBuilder.js";
 
 const RECONNECT_BASE_DELAY_MS = 2000;
 const RECONNECT_MAX_DELAY_MS = 30000;

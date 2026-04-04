@@ -1,7 +1,7 @@
-import { Algorithms } from "../core/encrypt";
+import { Algorithms } from "../core/encrypt.js";
 import net from "net";
-import { HexFormatter } from "../utils/format";
-import { getCommandName } from "../utils/commandDict";
+import { HexFormatter } from "../utils/format.js";
+import { getCommandName } from "../utils/commandDict.js";
 
 type MessageCallback = (message: string) => void;
 
@@ -41,7 +41,7 @@ export class SendPacketProcessing {
   parsePacket(packet: Buffer): this {
     if (packet.length >= 17) {
       this.length = packet.subarray(0, 4);
-      this.version = packet[4];
+      this.version = packet[4] ?? null;
       this.cmdId = packet.subarray(5, 9);
       this.result = packet.subarray(13, 17);
       this.body = packet.subarray(17);
@@ -54,7 +54,7 @@ export class SendPacketProcessing {
           )})`,
         );
         console.log(
-          `Version: ${this.version} (0x${HexFormatter.format02X(this.version)})`,
+          `Version: ${this.version} (0x${HexFormatter.format02X(this.version ?? 0)})`,
         );
         console.log(
           `CmdId: ${this.cmdId.readUInt32BE(0)} (0x${HexFormatter.format08X(

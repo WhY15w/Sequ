@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import net from "net";
 import axios from "axios";
-import { settings } from "../config/config";
+import { settings } from "../config/config.js";
 
 export class Login {
   async login(
