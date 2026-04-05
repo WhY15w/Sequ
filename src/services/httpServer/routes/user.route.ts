@@ -4,7 +4,10 @@ import {
   getUserInfo,
   getTeamInfo,
 } from "../controllers/user.controller.js";
-import { getVoteInfo } from "../controllers/peak.controller.js";
+import {
+  getPeakRankInfo,
+  getVoteInfo,
+} from "../controllers/peak.controller.js";
 
 const router: express.Router = express.Router();
 
@@ -13,5 +16,6 @@ router.get("/getUserInfo", getUserInfo);
 router.get("/getTeamInfo", getTeamInfo);
 
 router.get("/getVoteInfo", getVoteInfo);
+router.get("/getPeakRankInfo", getPeakRankInfo);
 
 export default router;

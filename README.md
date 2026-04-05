@@ -208,6 +208,66 @@ pnpm start   # 等价于 tsc && node dist/index.js
 
 ---
 
+### `GET /api/getDailyRankInfo`
+
+查询排行列表，底层复用游戏内 `GET_DAILY_RANK_INFO` 命令。
+支持直接传 `key`，也支持按 AS 里的 `page/mode/tab` 规则推导 `rank_key`。
+
+**请求参数**
+
+| 参数       | 类型   | 说明                |
+| ---------- | ------ | ------------------- |
+| `page`     | number | 排行页码，1~4，可选 |
+| `mode`     | number | 模式，0 或 1，可选  |
+| `tab`      | number | 子标签索引，可选    |
+| `key`      | number | 排行 key            |
+| `subkey`   | number | 排行子 key          |
+| `startIdx` | number | 起始下标，默认 `0`  |
+| `endIdx`   | number | 结束下标，默认 `99` |
+
+**rank_key 规则**
+
+| page | 规则                                          |
+| ---- | --------------------------------------------- |
+| 1    | `mode == 0 ? 120 : 182`                       |
+| 2    | `[[177, 93, 94], [185, 184, 183]][mode][tab]` |
+| 3    | `[[174, 173], [187, 186]][mode][tab]`         |
+| 4    | `[[176, 175], [189, 188]][mode][tab]`         |
+
+**响应示例**
+
+```json
+{
+  "success": true,
+  "message": "获取成功",
+  "data": {
+    "key": 120,
+    "subkey": 20210526,
+    "startIdx": 0,
+    "endIdx": 99,
+    "rankList": [
+      {
+        "userid": 12345678,
+        "score": 999999,
+        "nick": "玩家昵称"
+      }
+    ]
+  }
+}
+```
+
+**data 字段说明**
+
+| 字段       | 说明                                     |
+| ---------- | ---------------------------------------- |
+| `key`      | 请求的排行 key                           |
+| `subkey`   | 请求的排行子 key                         |
+| `startIdx` | 请求的起始下标                           |
+| `endIdx`   | 请求的结束下标                           |
+| `rankList` | 排行数组，包含 `userid`、`score`、`nick` |
+
+---
+
 ## 项目结构
 
 ```
