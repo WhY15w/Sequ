@@ -1,157 +1,178 @@
 # seer-query
 
-`seer-query` 是一个面向赛尔号游戏的数据查询服务，通过维持一条持久的加密 TCP 连接，向外暴露 HTTP API，可查询玩家米米号信息、在线状态、巅峰排名、精灵展示卡以及战队信息等数据。
+seer-query 是一个关于赛尔号的数据查询服务项目。直接通过 TCP 连接与游戏服务器通信，并通过 Express 暴露 HTTP API，用于查询米米号信息、在线状态、战队信息、巅峰排行和投票排行等数据。
 
 ## 目录
 
-- [特性](#特性)
+- [功能特性](#功能特性)
 - [环境要求](#环境要求)
 - [快速开始](#快速开始)
-- [配置项说明](#配置项说明)
-- [运行项目](#运行项目)
-- [HTTP API 接口](#http-api-接口)
+- [配置说明](#配置说明)
+- [运行命令](#运行命令)
+- [HTTP API](#http-api)
 - [项目结构](#项目结构)
-- [实现原理](#实现原理)
+- [核心实现](#核心实现)
 
----
+## 功能特性
 
-## 特性
-
-- 使用真实游戏账号登录，通过 TCP 协议与游戏服务器通信
-- 自动维持心跳（每 5 分钟）保活长连接
-- 断线自动重连，支持指数退避策略（2 s → 30 s）
-- 重连前检测服务器维护状态
-
----
+- 真实账号登录，保持与游戏服的 TCP 长连接
+- 自动心跳保活（5 分钟）
+- 自动重连（指数退避，2 秒到 30 秒）
+- 重连前检测维护公告，避免维护期无效重试
+- 重连失败可通过飞书 Webhook 告警
+- 统一 JSON 响应结构，便于上游调用
 
 ## 环境要求
 
-- Node.js v18+ 或 v20+
-- pnpm（或 npm / yarn）
-
----
+- Node.js 18+
+- pnpm 10+
 
 ## 快速开始
 
+1. 安装依赖
+
 ```bash
-# 1. 安装依赖
 pnpm install
+```
 
-# 2. 复制配置文件并填写账号信息
+2. 准备环境变量
+
+macOS/Linux:
+
+```bash
 cp .env.example .env
-
-# 3. 以开发模式启动
-pnpm dev
 ```
 
----
+Windows PowerShell:
 
-## 配置项说明
+```powershell
+Copy-Item .env.example .env
+```
 
-在根目录创建 `.env` 文件（可参考 `.env.example`），各配置项含义如下：
-
-| 环境变量                   | 说明                                                                   | 默认值            | 是否必填 |
-| -------------------------- | ---------------------------------------------------------------------- | ----------------- | -------- |
-| `GAME_SERVER_HOST`         | 游戏服务器地址                                                         | `175.24.235.221`  | 否       |
-| `GAME_SERVER_PORT`         | 游戏服务器端口                                                         | `1225`            | 否       |
-| `SERVICE_ACCOUNT_ID`       | 登录用米米号                                                           | —                 | **必填** |
-| `SERVICE_ACCOUNT_PASSWORD` | 登录密码                                                               | —                 | **必填** |
-| `LOG_CALLBACKS`            | 是否打印发送/接收封包的回调日志，生产环境可设为 `false` 以减少日志输出 | `true`            | 否       |
-| `LOG_FULL_PACKET`          | 是否记录完整封包十六进制数据                                           | `false`           | 否       |
-| `IGNORED_CMD_IDS`          | 不打印日志的命令 ID 列表，以 `\|` 分隔                                 | `8002\|3452\|...` | 否       |
-
-> ⚠️ 请勿将包含真实账号密码的 `.env` 文件提交至版本控制系统。
-
----
-
-## 运行项目
-
-**开发模式**（使用 `tsx` 直接运行 TypeScript，无需编译）：
+3. 填写服务账号配置后启动
 
 ```bash
 pnpm dev
 ```
 
-**生产模式**（先编译，再运行）：
+## 配置说明
+
+项目会优先加载以下环境文件：
+
+- Windows 本地开发：若存在 `.env.development`，会先加载它
+- 其后统一加载 `.env`
+
+常用环境变量如下：
+
+| 变量名                   | 说明                                 | 默认值              | 必填 |
+| ------------------------ | ------------------------------------ | ------------------- | ---- |
+| GAME_SERVER_HOST         | 游戏服务器地址                       | 175.24.235.221      | 否   |
+| GAME_SERVER_PORT         | 游戏服务器端口                       | 1225                | 否   |
+| SERVICE_ACCOUNT_ID       | 登录米米号                           | 0                   | 是   |
+| SERVICE_ACCOUNT_PASSWORD | 登录密码                             | 空字符串            | 是   |
+| PORT                     | HTTP 服务端口                        | 3000                | 否   |
+| LOG_CALLBACKS            | 是否打印封包回调日志（true/false/1） | true                | 否   |
+| LOG_FULL_PACKET          | 是否打印完整封包十六进制日志         | false               | 否   |
+| IGNORED_CMD_IDS          | 日志忽略命令 ID，使用竖线分隔        | 8002\|3452\|2004... | 否   |
+| FEISHU_WEBHOOK_URL       | 飞书机器人地址（重连告警）           | 空字符串            | 否   |
+| FEISHU_WEBHOOK_SECRET    | 飞书机器人密钥（重连告警）           | 空字符串            | 否   |
+
+说明：
+
+- 未配置 SERVICE_ACCOUNT_ID 或 SERVICE_ACCOUNT_PASSWORD 时，程序会打印警告。
+- 请勿将真实账号密码提交到仓库。
+
+## 运行命令
+
+开发模式（tsx 直接运行 TS）：
 
 ```bash
-pnpm build   # TypeScript 编译输出至 dist/
-pnpm start   # 等价于 tsc && node dist/index.js
+pnpm dev
 ```
 
-服务默认监听 **3000** 端口（可通过环境变量 `PORT` 修改）。
+构建：
 
----
+```bash
+pnpm build
+```
 
-## HTTP API 接口
+生产启动（先编译再启动）：
 
-所有接口均返回统一 JSON 结构：
+```bash
+pnpm start
+```
+
+代码质量：
+
+```bash
+pnpm lint
+pnpm lint:fix
+pnpm format
+```
+
+## HTTP API
+
+基础路径：`/api`
+
+统一响应体：
 
 ```json
 {
   "success": true,
-  "message": "ok",
-  "data": { ... }
+  "message": "获取成功",
+  "code": 200,
+  "data": {}
 }
 ```
 
----
+部分接口会额外返回 `status` 字段。
 
-### `GET /api/getUserOnlineStatus`
+### 1) GET /api/getUserOnlineStatus
 
-查询玩家昵称与在线状态。
+用途：查询米米号昵称和在线状态。
 
-**请求参数**
+请求参数：
 
-| 参数      | 类型   | 说明                                       |
-| --------- | ------ | ------------------------------------------ |
-| `account` | number | 玩家米米号（范围：50,000 ~ 2,000,000,000） |
+| 参数    | 类型   | 必填 | 说明                             |
+| ------- | ------ | ---- | -------------------------------- |
+| account | number | 是   | 米米号，范围 50000 到 2000000000 |
 
-**响应示例**
+成功示例：
 
 ```json
 {
   "success": true,
-  "message": "ok",
+  "message": "数据返回成功",
+  "code": 200,
   "data": {
-    "account": 12345678,
+    "account": "12345678",
     "nickName": "玩家昵称",
     "online": true,
-    "server": 3
+    "server": "3"
   }
 }
 ```
 
-**data 字段说明**
+### 2) GET /api/getUserInfo
 
-| 字段       | 类型    | 说明                              |
-| ---------- | ------- | --------------------------------- |
-| `account`  | number  | 查询的米米号                      |
-| `nickName` | string  | 玩家昵称                          |
-| `online`   | boolean | 是否在线                          |
-| `server`   | number  | 当前所在服务器 ID（离线时不返回） |
+用途：查询用户详细信息（包含多段原始十六进制数据）。
 
----
+请求参数：
 
-### `GET /api/getUserInfo`
+| 参数    | 类型   | 必填 | 说明                             |
+| ------- | ------ | ---- | -------------------------------- |
+| account | number | 是   | 米米号，范围 50000 到 2000000000 |
 
-查询玩家的完整个人资料，包含简介、在线状态、巅峰排名、精灵卡片等原始十六进制数据。
-
-**请求参数**
-
-| 参数      | 类型   | 说明                                       |
-| --------- | ------ | ------------------------------------------ |
-| `account` | number | 玩家米米号（范围：50,000 ~ 2,000,000,000） |
-
-**响应示例**
+成功示例：
 
 ```json
 {
   "success": true,
-  "message": "ok",
-  "status": "online",
+  "message": "数据返回成功",
+  "code": 200,
+  "status": 1,
   "data": {
-    "account": 12345678,
+    "account": "12345678",
     "nickName": "玩家昵称",
     "online": false,
     "hexDataMore": "...",
@@ -163,83 +184,94 @@ pnpm start   # 等价于 tsc && node dist/index.js
 }
 ```
 
-**data 字段说明**
+字段说明：
 
-| 字段            | 说明                                                             |
-| --------------- | ---------------------------------------------------------------- |
-| `hexDataMore`   | cmdId 2052 返回的完整信息（含昵称等基础数据）                    |
-| `hexDataSimple` | cmdId 2051 返回的简版个人资料                                    |
-| `hexDatapart1`  | cmdId 41298（param=1）返回的精英精灵/成就/皮肤数据               |
-| `hexDatapart2`  | cmdId 41298（param=5）返回的名片展示精灵数据                     |
-| `hexDataPeak`   | cmdId 40002 返回的巅峰赛各赛季排名数据（竞技/狂野/专家共 12 组） |
+- hexDataMore：cmd 2052 返回的用户基础信息
+- hexDataSimple：cmd 2051 返回的简版信息
+- hexDatapart1：cmd 41298 param=1
+- hexDatapart2：cmd 41298 param=5
+- hexDataPeak：循环请求 cmd 40002 的拼接结果
 
-> 以上十六进制数据均为游戏协议原始字节，具体字段解析未在此项目实现。
+### 3) GET /api/getTeamInfo
 
----
+用途：查询战队信息。
 
-### `GET /api/getTeamInfo`
+请求参数：
 
-查询战队信息。
+| 参数   | 类型   | 必填 | 说明              |
+| ------ | ------ | ---- | ----------------- |
+| teamId | number | 是   | 战队 ID（大于 0） |
 
-**请求参数**
-
-| 参数     | 类型   | 说明    |
-| -------- | ------ | ------- |
-| `teamId` | number | 战队 ID |
-
-**响应示例**
-
-```json
-{
-  "success": true,
-  "message": "ok",
-  "data": {
-    "teamId": 1001,
-    "hexDataTeam": "..."
-  }
-}
-```
-
-**data 字段说明**
-
-| 字段          | 说明                          |
-| ------------- | ----------------------------- |
-| `hexDataTeam` | cmdId 2917 返回的战队原始数据 |
-
----
-
-### `GET /api/getDailyRankInfo`
-
-查询排行列表，底层复用游戏内 `GET_DAILY_RANK_INFO` 命令。
-支持直接传 `key`，也支持按 AS 里的 `page/mode/tab` 规则推导 `rank_key`。
-
-**请求参数**
-
-| 参数       | 类型   | 说明                |
-| ---------- | ------ | ------------------- |
-| `page`     | number | 排行页码，1~4，可选 |
-| `mode`     | number | 模式，0 或 1，可选  |
-| `tab`      | number | 子标签索引，可选    |
-| `key`      | number | 排行 key            |
-| `subkey`   | number | 排行子 key          |
-| `startIdx` | number | 起始下标，默认 `0`  |
-| `endIdx`   | number | 结束下标，默认 `99` |
-
-**rank_key 规则**
-
-| page | 规则                                          |
-| ---- | --------------------------------------------- |
-| 1    | `mode == 0 ? 120 : 182`                       |
-| 2    | `[[177, 93, 94], [185, 184, 183]][mode][tab]` |
-| 3    | `[[174, 173], [187, 186]][mode][tab]`         |
-| 4    | `[[176, 175], [189, 188]][mode][tab]`         |
-
-**响应示例**
+成功示例：
 
 ```json
 {
   "success": true,
   "message": "获取成功",
+  "code": 200,
+  "data": {
+    "teamId": "1001",
+    "hexDataTeam": "..."
+  }
+}
+```
+
+### 4) GET /api/getVoteInfo
+
+用途：查询巅峰投票排行。
+
+请求参数：
+
+| 参数     | 类型   | 必填 | 说明                         |
+| -------- | ------ | ---- | ---------------------------- |
+| voteDate | number | 是   | 投票日期（例如 20210526）    |
+| voteType | number | 否   | 0 限制级，1 准限制级，默认 0 |
+| startIdx | number | 否   | 起始下标，默认 0             |
+| endIdx   | number | 否   | 结束下标，默认 25            |
+
+成功示例：
+
+```json
+{
+  "success": true,
+  "message": "获取成功",
+  "code": 200,
+  "data": {
+    "voteList": [
+      {
+        "voteMonsterId": 3001,
+        "voteCount": 12345
+      }
+    ]
+  }
+}
+```
+
+### 5) GET /api/getPeakRankInfo
+
+用途：查询巅峰排行榜。
+
+请求参数：
+
+| 参数     | 类型   | 必填 | 说明                                       |
+| -------- | ------ | ---- | ------------------------------------------ |
+| key      | number | 否   | 直接指定排行 key                           |
+| page     | number | 否   | 页面类型（1 玩家，2 精灵，3 套装，4 称号） |
+| mode     | number | 否   | 模式（0 竞技，1 狂野，2 专家），默认 0     |
+| tab      | number | 否   | 子分类索引，默认 0                         |
+| subkey   | number | 是   | 子 key                                     |
+| startIdx | number | 否   | 起始下标，默认 0                           |
+| endIdx   | number | 否   | 结束下标，默认 99                          |
+
+当 key 未传或非法时，服务会根据 page、mode、tab 自动计算 key。
+
+成功示例：
+
+```json
+{
+  "success": true,
+  "message": "获取成功",
+  "code": 200,
   "data": {
     "key": 120,
     "subkey": 20210526,
@@ -256,84 +288,109 @@ pnpm start   # 等价于 tsc && node dist/index.js
 }
 ```
 
-**data 字段说明**
+### 6) GET /api/getBookAndAchieveRankInfo
 
-| 字段       | 说明                                     |
-| ---------- | ---------------------------------------- |
-| `key`      | 请求的排行 key                           |
-| `subkey`   | 请求的排行子 key                         |
-| `startIdx` | 请求的起始下标                           |
-| `endIdx`   | 请求的结束下标                           |
-| `rankList` | 排行数组，包含 `userid`、`score`、`nick` |
+用途：查询图鉴或成就排行。
 
----
+请求参数：
+
+| 参数     | 类型   | 必填 | 说明              |
+| -------- | ------ | ---- | ----------------- |
+| type     | number | 是   | 0 图鉴，1 成就    |
+| startIdx | number | 否   | 起始下标，默认 0  |
+| endIdx   | number | 否   | 结束下标，默认 99 |
+
+成功示例：
+
+```json
+{
+  "success": true,
+  "message": "获取成功",
+  "code": 200,
+  "data": {
+    "key": 156,
+    "subkey": 1,
+    "startIdx": 0,
+    "endIdx": 99,
+    "rankList": [
+      {
+        "userid": 12345678,
+        "score": 321,
+        "nick": "玩家昵称"
+      }
+    ]
+  }
+}
+```
 
 ## 项目结构
 
-```
+```text
 src/
-├── index.ts              # 入口：初始化 TCP 服务后启动 HTTP 服务器
-├── config/
-│   ├── config.ts         # 环境变量加载与类型安全访问
-│   └── Command.json      # 游戏命令 ID → 命令名映射表
-├── core/
-│   ├── login.ts          # 登录认证：获取 session token、发送登录封包
-│   └── encrypt.ts        # 对称加密/解密（XOR + 位旋转 + 循环缓冲区旋转）
-├── pkg/
-│   ├── send.ts           # 封包构建、加密、发送及 sendAndReceive 封装
-│   └── receive.ts        # TCP 流缓冲、封包解析、命令路由
-├── services/
-│   ├── httpServer.ts     # Express HTTP API 路由（3 个接口）
-│   └── tcpService.ts     # TCP 连接管理：心跳、断线重连、请求超时
-└── utils/
-    ├── pkgBuilder.ts     # 链式封包构建器（setCmdId / addU32 / addU16 ...）
-    ├── reader.ts         # 二进制缓冲区读取工具（BufferReader / BitUtil）
-    ├── format.ts         # 十六进制格式化输出
-    ├── fetchData.ts      # 查询游戏维护公告
-    └── httpUtil.ts       # HTTP 工具函数
+  index.ts
+  config/
+    config.ts
+    Command.json
+  core/
+    encrypt.ts
+    login.ts
+  pkg/
+    receive.ts
+    send.ts
+  services/
+    tcpService.ts
+    httpServer/
+      app.ts
+      routes/
+        user.route.ts
+      controllers/
+        user.controller.ts
+        peak.controller.ts
+        rank.controller.ts
+  utils/
+    commandDict.ts
+    fetchData.ts
+    format.ts
+    httpUtil.ts
+    pkgBuilder.ts
+    reader.ts
+    reply.ts
+    webHook/
+      feishu.ts
 ```
 
----
+## 核心实现
 
-## 实现原理
+### 启动流程
 
-### 1. 启动流程
+1. 启动入口执行 `tcpService.init()`。
+2. 调用账号系统获取 session，并建立 TCP 连接。
+3. 等待登录后密钥初始化完成。
+4. 标记连接就绪，启动心跳。
+5. 启动 HTTP 服务（默认 3000 端口）。
 
-```
-bootstrap()
-  └── tcpService.init()
-        ├── Login.login()           # 获取 session token，建立 TCP 连接
-        ├── 等待 cmdId 1001 封包    # 服务器下发加密密钥
-        └── Algorithms.InitKey()   # 基于 MD5(lastUint ^ userId) 更新密钥
-  └── httpServer.listen(3000)
-```
+### 认证流程
 
-### 2. 封包格式（二进制协议）
+1. 对密码做单次 MD5。
+2. 请求 `https://account-co.61.com/index.php` 获取 session。
+3. 拼装登录封包（cmd 1001）并写入 socket。
 
-```
-+----------+----------+------------+----------+----------+--------+
-|  4 bytes |  1 byte  |   4 bytes  |  4 bytes |  4 bytes | N bytes|
-|  Length  | Version  | Command ID |  User ID | Checksum |  Body  |
-|          |  (0x31)  |            |          |  (CRC8)  |        |
-+----------+----------+------------+----------+----------+--------+
-```
+### 连接管理
 
-### 3. 加密算法
+- 心跳：每 5 分钟发送一次 cmd 2157。
+- 自动重连：连接断开后进入重连循环。
+- 退避策略：2s、4s、8s...最大 30s。
+- 最大次数：连续失败 10 次后停止自动重连。
+- 维护检测：重连前请求 `http://unity-notice.61.com/unity_notice/`，维护时 60 秒后重试。
+- 告警：每次重连失败和最终终止可推送飞书消息。
 
-1. 对每个字节进行 XOR 运算（使用密钥 `!crAckmE4nOthIng:-)`）
-2. 对字节进行循环左移 5 位 / 右移 3 位的位旋转
-3. 对密钥缓冲区进行循环旋转
-4. 首次收到 cmdId 1001 时，使用 `MD5(lastUint ^ userId)` 的前 10 字节更新密钥
+### TCP 封包与响应
 
-### 4. 认证流程
+- sendAndReceive 默认超时 5000ms。
+- 发送失败或检测到 socket 断开时，会触发重连并自动重试一次。
+- 业务层拿到的是去掉 17 字节头部后的 body。
 
-1. 对密码进行 MD5 哈希，POST 至 `https://account-co.61.com/index.php` 获取 session token
-2. 使用 session token 构建登录封包，通过 TCP 发送至游戏服务器
-3. 等待服务器返回 cmdId 1001 完成密钥交换，连接就绪
+## 注意事项
 
-### 5. 连接保活与容错
-
-- **心跳**：每 5 分钟发送一次 cmdId 2157 封包
-- **断线重连**：指数退避（2 s → 4 s → 8 s … 最大 30 s）
-- **维护检测**：重连前轮询 `http://unity-notice.61.com` 判断是否处于维护状态
-- **请求超时**：每次 `sendAndReceive` 最多等待 5 秒
+- 本项目返回的十六进制数据多为游戏协议原始字节，未做完整字段反序列化。
+- 对外错误信息以 message + code + data.error 为准。
