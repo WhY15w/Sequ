@@ -164,7 +164,7 @@ export async function getUserInfo(req: Request, res: Response): Promise<void> {
     ]);
 
     // 成就/精灵信息
-    const [hexDataPrat1, hexDataPrat2] = await Promise.all([
+    const [hexDatapart1, hexDatapart2] = await Promise.all([
       sendPacketAndToHex(41298, 1, account, 0, 0),
       sendPacketAndToHex(41298, 5, account, 0, 0),
     ]);
@@ -183,8 +183,8 @@ export async function getUserInfo(req: Request, res: Response): Promise<void> {
           hexDataMore: nicknameResult.hexData,
           ...onlineResult,
           hexDataSimple,
-          hexDataPrat1,
-          hexDataPrat2,
+          hexDatapart1,
+          hexDatapart2,
           hexDataPeak,
         },
         '数据返回成功',

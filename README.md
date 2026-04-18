@@ -156,8 +156,8 @@ pnpm start   # 等价于 tsc && node dist/index.js
     "online": false,
     "hexDataMore": "...",
     "hexDataSimple": "...",
-    "hexDataPrat1": "...",
-    "hexDataPrat2": "...",
+    "hexDatapart1": "...",
+    "hexDatapart2": "...",
     "hexDataPeak": "..."
   }
 }
@@ -169,8 +169,8 @@ pnpm start   # 等价于 tsc && node dist/index.js
 | --------------- | ---------------------------------------------------------------- |
 | `hexDataMore`   | cmdId 2052 返回的完整信息（含昵称等基础数据）                    |
 | `hexDataSimple` | cmdId 2051 返回的简版个人资料                                    |
-| `hexDataPrat1`  | cmdId 41298（param=1）返回的精英精灵/成就/皮肤数据               |
-| `hexDataPrat2`  | cmdId 41298（param=5）返回的名片展示精灵数据                     |
+| `hexDatapart1`  | cmdId 41298（param=1）返回的精英精灵/成就/皮肤数据               |
+| `hexDatapart2`  | cmdId 41298（param=5）返回的名片展示精灵数据                     |
 | `hexDataPeak`   | cmdId 40002 返回的巅峰赛各赛季排名数据（竞技/狂野/专家共 12 组） |
 
 > 以上十六进制数据均为游戏协议原始字节，具体字段解析未在此项目实现。
