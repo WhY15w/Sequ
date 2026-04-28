@@ -26,6 +26,7 @@ export class TCPService {
   private reconnectAttempts: number = 0;
   private heartbeatTimer: NodeJS.Timeout | null = null;
   private reconnectFailure: Error | null = null;
+  private isShutdown: boolean = false;
 
   private _notifyReconnectFailure(message: string): void {
     const task = sendTextMessage(message);
@@ -43,6 +44,7 @@ export class TCPService {
     try {
       await this._doConnect();
     } catch (error) {
+      if (this.isShutdown) return;
       console.error(
         `初始化连接失败: ${(error as Error).message}，准备进入重连流程...`,
       );
@@ -64,6 +66,12 @@ export class TCPService {
       settings.service_account_id,
       settings.service_account_password,
     );
+
+    if (this.isShutdown) {
+      reader.destroy();
+      writer.destroy();
+      throw new Error('TCP 服务已关闭，中止连接建立');
+    }
 
     const msgCallback = settings.log_callbacks
       ? (msg: string) =>
@@ -92,6 +100,16 @@ export class TCPService {
 
     // 等待 1001 密钥初始化封包处理完毕
     await new Promise((resolve) => setTimeout(resolve, KEY_INIT_DELAY_MS));
+
+    if (this.isShutdown) {
+      if (this.receiver) {
+        this.receiver.stop();
+        this.receiver = null;
+      }
+      this.sender = null;
+      throw new Error('TCP 服务已关闭，中止连接建立');
+    }
+
     this.isReady = true;
     console.log('TCP 服务端初始化完成，密钥就绪！');
 
@@ -152,6 +170,7 @@ export class TCPService {
    * 触发重连流程（幂等，重连进行中时忽略重复调用）
    */
   private _scheduleReconnect(): void {
+    if (this.isShutdown) return;
     if (this.isReconnecting) return;
     this.isReconnecting = true;
     this.isReady = false;
@@ -218,6 +237,8 @@ export class TCPService {
         this._notifyReady();
         return;
       } catch (error) {
+        if (this.isShutdown) return;
+
         if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
           const finalError = new Error(
             `TCP 服务端重连失败，已连续尝试 ${MAX_RECONNECT_ATTEMPTS} 次，已停止自动重连`,
@@ -301,6 +322,9 @@ export class TCPService {
     const cmdId = packetBuf.readUInt32BE(5);
 
     const ensureReady = async () => {
+      if (this.isShutdown) {
+        throw new Error('TCP 服务已关闭');
+      }
       if (!this.isReady || !this.sender || !this.receiver) {
         this._scheduleReconnect();
         await this._waitUntilReady();
@@ -334,6 +358,10 @@ export class TCPService {
     try {
       return await sendOnce();
     } catch (error) {
+      if (this.isShutdown) {
+        throw new Error('TCP 服务已关闭，中止重试');
+      }
+
       const message = (error as Error).message;
       const isDisconnectError =
         message.includes('Socket连接已断开') ||
@@ -359,6 +387,7 @@ export class TCPService {
    * 关闭服务
    */
   shutdown(): void {
+    this.isShutdown = true;
     this.isReconnecting = false;
     this.isReady = false;
     this.reconnectFailure = new Error('TCP 服务已关闭');
