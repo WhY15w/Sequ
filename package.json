@@ -21,7 +21,7 @@
     "axios": "^1.15.2",
     "dayjs": "^1.11.20",
     "dotenv": "^17.4.2",
-    "hono": "^4.12.15"
+    "hono": "^4.12.16"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",

@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@hono/node-server':
         specifier: ^1.19.14
-        version: 1.19.14(hono@4.12.15)
+        version: 1.19.14(hono@4.12.16)
       axios:
         specifier: ^1.15.2
         version: 1.15.2
@@ -21,8 +21,8 @@ importers:
         specifier: ^17.4.2
         version: 17.4.2
       hono:
-        specifier: ^4.12.15
-        version: 4.12.15
+        specifier: ^4.12.16
+        version: 4.12.16
     devDependencies:
       '@trivago/prettier-plugin-sort-imports':
         specifier: ^6.0.2
@@ -514,8 +514,8 @@ packages:
     resolution: {integrity: sha512-ej4AhfhfL2Q2zpMmLo7U1Uv9+PyhIZpgQLGT1F9miIGmiCJIoCgSmczFdrc97mWT4kVY72KA+WnnhJ5pghSvSg==}
     engines: {node: '>= 0.4'}
 
-  hono@4.12.15:
-    resolution: {integrity: sha512-qM0jDhFEaCBb4TxoW7f53Qrpv9RBiayUHo0S52JudprkhvpjIrGoU1mnnr29Fvd1U335ZFPZQY1wlkqgfGXyLg==}
+  hono@4.12.16:
+    resolution: {integrity: sha512-jN0ZewiNAWSe5khM3EyCmBb250+b40wWbwNILNfEvq84VREWwOIkuUsFONk/3i3nqkz7Oe1PcpM2mwQEK2L9Kg==}
     engines: {node: '>=16.9.0'}
 
   javascript-natural-sort@0.7.1:
@@ -722,9 +722,9 @@ snapshots:
   '@esbuild/win32-x64@0.27.7':
     optional: true
 
-  '@hono/node-server@1.19.14(hono@4.12.15)':
+  '@hono/node-server@1.19.14(hono@4.12.16)':
     dependencies:
-      hono: 4.12.15
+      hono: 4.12.16
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
@@ -949,7 +949,7 @@ snapshots:
     dependencies:
       function-bind: 1.1.2
 
-  hono@4.12.15: {}
+  hono@4.12.16: {}
 
   javascript-natural-sort@0.7.1: {}
 
