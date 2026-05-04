@@ -1,4 +1,5 @@
 import { settings } from '../config/config.js';
+import { PacketBuilder } from '../utils/pkg/builder.js';
 import axios from 'axios';
 import crypto from 'crypto';
 import net from 'net';
@@ -6,12 +7,6 @@ import net from 'net';
 const SESSION_SERVER_URL = 'https://account-co.61.com/index.php';
 const CONNECT_TIMEOUT_MS = 10000;
 const SESSION_TIMEOUT_MS = 10000;
-
-const PACKET_HEADER_HEX = '0000020D31000003E9';
-const PACKET_ZERO_PAD_HEX = '00000000';
-
-const TAIL_HEX =
-  '74616F6D65650000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000B38000000015043000000000000000000000000000000002710000000010000000100000002756E6974795F6170705F74616F6D656500000000000000000000000000000000636F6D2E74616F6D65652E736565722E6D6F62696C65000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004E6974726F414E3531352D35352841636572290000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
 
 const JSONP_SUFFIX = ');';
 
@@ -29,13 +24,10 @@ export class Login {
 
     console.log(`获取 session 成功: ${sessionBytes.toString('hex')}`);
 
-    const useridBytes = Buffer.alloc(4);
-    useridBytes.writeUInt32BE(userIdNum, 0);
-
     try {
       const socket = await this.connectSocket();
 
-      const loginPacket = this.buildLoginPacket(useridBytes, sessionBytes);
+      const loginPacket = this.buildLoginPacket(userIdNum, sessionBytes);
 
       socket.write(loginPacket);
 
@@ -146,17 +138,69 @@ export class Login {
     return JSON.parse(jsonText);
   }
 
-  private buildLoginPacket(useridBytes: Buffer, sessionBytes: Buffer): Buffer {
-    const fullRecvBody = Buffer.concat([
-      sessionBytes,
-      Buffer.from(TAIL_HEX, 'hex'),
-    ]);
+  private buildLoginPacket(userId: number, sessionBytes: Buffer): Buffer {
+    const builder = new PacketBuilder();
+    builder.setCmdId(1001);
+    (builder as any).userId = userId;
 
-    return Buffer.concat([
-      Buffer.from(PACKET_HEADER_HEX, 'hex'),
-      useridBytes,
-      Buffer.from(PACKET_ZERO_PAD_HEX, 'hex'),
-      fullRecvBody,
-    ]);
+    // 1. session
+    builder.addBytes(this.toFixedBuffer(sessionBytes, 16));
+    // 2. topLeftTmcid
+    builder.addBytes(this.toFixedBuffer('taomee', 64));
+    // 3. onlineID
+    builder.addU32(2200);
+    // 4. 固定值1
+    builder.addU32(1);
+    // 5. device
+    builder.addBytes(this.toFixedBuffer('PC', 16));
+    // 6. versionCode
+    builder.addU32(10000);
+    // 7. loginType
+    builder.addU32(1);
+    // 8. platform - 1: PC, 2: Android, 3: iOS
+    builder.addU32(1);
+    // 9. webOrApp
+    builder.addU32(2);
+    // 10. channelBy
+    builder.addBytes(this.toFixedBuffer('unity_app_taomee', 32));
+    // 11. extra_pkg_name
+    builder.addBytes(this.toFixedBuffer('com.taomee.seer.mobile', 32));
+    // 12. extra_idfa_oaid
+    builder.addBytes(Buffer.alloc(64));
+    // 13. extra_idfv_imei
+    builder.addBytes(Buffer.alloc(64));
+    // 14. extra_caid_androidid
+    builder.addBytes(Buffer.alloc(64));
+    // 15. extra_devicetype
+    builder.addBytes(this.toFixedBuffer('20SM(LENOVO)', 64));
+    // 16. extra_deviceid
+    builder.addBytes(Buffer.alloc(64));
+    // 17. extra_asa_token
+    builder.addBytes(this.buildASAToken());
+
+    const hexString = builder.build();
+    console.log(hexString);
+    return Buffer.from(hexString, 'hex');
+  }
+
+  private toFixedBuffer(data: string | Buffer, length: number): Buffer {
+    const buf = Buffer.alloc(length, 0);
+    if (typeof data === 'string') {
+      buf.write(data, 0, 'utf8');
+    } else {
+      data.copy(buf, 0, 0, Math.min(data.length, length));
+    }
+    return buf;
+  }
+
+  private buildASAToken(): Buffer {
+    const str = '';
+    const strBuf = Buffer.from(str, 'utf8');
+
+    const buf = Buffer.alloc(4 + strBuf.length);
+    buf.writeUInt32BE(strBuf.length, 0);
+    strBuf.copy(buf, 4);
+
+    return buf;
   }
 }
