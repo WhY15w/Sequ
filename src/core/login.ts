@@ -179,7 +179,6 @@ export class Login {
     builder.addBytes(this.buildASAToken());
 
     const hexString = builder.build();
-    console.log(hexString);
     return Buffer.from(hexString, 'hex');
   }
 
